@@ -1,30 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "react-bootstrap";
-import EditModal from "../Modals/EditModal";
-import RemoveModal from "../Modals/RemoveModal";
 
 const TableItem = ({ item, editHandler, removeHandler }) => {
-  const [showEdit, setShowEdit] = useState(false);
-  const [showRemove, setShowRemove] = useState(false);
-
   return (
     <>
-      {showEdit && (
-        <EditModal
-          show={showEdit}
-          item={item}
-          onHide={() => setShowEdit(false)}
-          editHandler={editHandler}
-        />
-      )}
-      {showRemove && (
-        <RemoveModal
-          show={showRemove}
-          item={item}
-          onHide={() => setShowRemove(false)}
-          removeHandler={removeHandler}
-        />
-      )}
       <tr>
         <td>{item?.id ?? "---"}</td>
         <td>{item?.name ?? "---"}</td>
@@ -32,12 +11,12 @@ const TableItem = ({ item, editHandler, removeHandler }) => {
         <td>{item?.email ?? "---"}</td>
         <td>{item?.address?.city ?? "---"}</td>
         <td>
-          <Button variant="warning" onClick={() => setShowEdit(true)}>
+          <Button variant="warning" onClick={() => editHandler(item)}>
             Edit
           </Button>
         </td>
         <td>
-          <Button variant="danger" onClick={() => setShowRemove(true)}>
+          <Button variant="danger" onClick={() => removeHandler(item)}>
             Delete
           </Button>
         </td>

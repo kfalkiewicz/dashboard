@@ -1,15 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "react-bootstrap";
 import Form from "../Form";
 import Modal from "./Modal";
 
-const EditModal = ({ item, editHandler, ...other }) => {
-  const [email, setEmail] = useState(item?.email);
-  const [name, setName] = useState(item?.name);
+const FormModal = ({ clickHandler, item, title, ...other }) => {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    setEmail(item?.email || "");
+    setName(item?.name || "");
+  }, [item]);
 
   return (
     <Modal
-      title="Edit"
+      title={title}
       body={
         <Form
           emailValue={email}
@@ -21,7 +26,7 @@ const EditModal = ({ item, editHandler, ...other }) => {
       footer={
         <Button
           variant="success"
-          onClick={() => editHandler(item.id, name, email)}
+          onClick={() => clickHandler({ ...item, name, email })}
         >
           Save
         </Button>
@@ -31,4 +36,4 @@ const EditModal = ({ item, editHandler, ...other }) => {
   );
 };
 
-export default EditModal;
+export default FormModal;

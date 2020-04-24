@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Alert, Spinner, Table as BootstrapTable } from "react-bootstrap";
+import { Alert, Table as BootstrapTable } from "react-bootstrap";
+import useFetch from "use-http";
+import { FormModal, RemoveModal } from "../Modals";
 import TableHeader from "./TableHeader";
 import TableItem from "./TableItem";
 
@@ -11,121 +13,109 @@ const serverAddress =
 
 const Table = (props) => {
   const [users, setUsers] = useState([]);
-  const [error, setError] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { del, error, get, post, put, response } = useFetch(serverAddress);
+  const [modalData, setModalData] = useState({
+    action: "Add",
+    item: {},
+    handler: () => {},
+    show: false,
+    type: "form",
+  });
+  const Modal = {
+    form: FormModal,
+    remove: RemoveModal,
+  }[modalData.type];
 
   useEffect(() => {
-    fetch(serverAddress)
-      .then((response) => response.json())
-      .then(
-        (result) => {
-          setIsLoaded(true);
-          setUsers(result);
-        },
-        (error) => {
-          setIsLoaded(true);
-          setError(error);
-        }
-      );
+    getUsers();
   }, []);
 
-  const addUser = (name, email) => {
-    fetch(serverAddress, {
-      method: "POST",
-      body: JSON.stringify({
-        name,
-        email,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    })
-      .then((response) => response.json())
-      .then(
-        (result) => {
-          setUsers((users) => [...users, result]);
-        },
-        (error) => {
-          setError(error);
-        }
-      );
+  const getBiggestId = () => Math.max(...users.map((item) => item.id));
+
+  const getUsers = async () => {
+    const users = await get();
+    if (response.ok) setUsers(users);
   };
 
-  const editUser = (id, name, email) => {
-    fetch(`${serverAddress}/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        id,
-        name,
-        email,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    })
-      .then((response) => response.json())
-      .then(
-        (result) => {
-          setUsers((users) =>
-            users.map((el) => (el.id === id ? { ...el, name, email } : el))
-          );
-        },
-        (error) => {
-          setError(error);
-        }
-      );
+  const addUser = async (item) => {
+    const newUser = await post("", {
+      ...item,
+      id: getBiggestId() + 1,
+    });
+    if (response.ok) setUsers((state) => [...state, newUser]);
   };
 
-  const removeUser = (id) => {
-    fetch(serverAddress, {
-      method: "DELETE",
-      body: JSON.stringify({
-        id,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    })
-      .then((response) => response.json())
-      .then(
-        (result) => {
-          setUsers((users) => users.filter((el) => el.id !== id));
-        },
-        (error) => {
-          setError(error);
-        }
+  const editUser = async (item) => {
+    const { id, name, email } = item;
+    const editedUser = await put(`/${id}`, { id, name, email });
+
+    if (response.ok) {
+      setUsers(
+        users.map((el) => (el.id === id ? { ...el, ...editedUser } : el))
       );
+    }
+  };
+
+  const removeUser = async (item) => {
+    const { id } = item;
+    await del(`/${id}`);
+
+    if (response.ok) {
+      setUsers((users) => users.filter((el) => el.id !== id));
+    }
+  };
+
+  const tableItemHandler = (action, handler, item, type) => {
+    const clickHandler = (newItem) => {
+      handler(newItem);
+      setModalData((data) => ({ ...data, show: false }));
+    };
+    const newData = {
+      action,
+      handler: clickHandler,
+      item,
+      show: true,
+      type,
+    };
+    setModalData(newData);
   };
 
   return (
     <>
-      {error !== null && <Alert variant="danger">{error}</Alert>}
-      <TableHeader buttonFunc={addUser} />
-      {!isLoaded ? (
-        <Spinner animation="border" role="status">
-          <span className="sr-only">Loading...</span>
-        </Spinner>
-      ) : (
-        <BootstrapTable striped bordered hover>
-          <thead>
-            <tr>
-              {columns.map((item) => (
-                <th key={item}>{item}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((item) => (
-              <TableItem
-                key={`${item.id}_${item.username}`}
-                item={item}
-                editHandler={editUser}
-                removeHandler={removeUser}
-              />
+      {error && <Alert variant="danger">{error}</Alert>}
+      <TableHeader
+        clickHandler={() => tableItemHandler("Add", addUser, {}, "form")}
+      />
+      <BootstrapTable striped bordered hover>
+        <thead>
+          <tr>
+            {columns.map((item) => (
+              <th key={item}>{item}</th>
             ))}
-          </tbody>
-        </BootstrapTable>
-      )}
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((item) => (
+            <TableItem
+              key={`${item.id}_${item.username}`}
+              item={item}
+              editHandler={(item) =>
+                tableItemHandler("Edit", editUser, item, "form")
+              }
+              removeHandler={(item) =>
+                tableItemHandler("Remove", removeUser, item, "remove")
+              }
+            />
+          ))}
+        </tbody>
+      </BootstrapTable>
+      <Modal
+        clickHandler={modalData.handler}
+        item={modalData.item}
+        onHide={() => setModalData((data) => ({ ...data, show: false }))}
+        show={modalData.show}
+        title={modalData.action}
+      />
     </>
   );
 };
