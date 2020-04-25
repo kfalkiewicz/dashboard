@@ -4,11 +4,13 @@
   "private": true,
   "dependencies": {
     "bootstrap": "^4.4.1",
+    "formik": "^2.1.4",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
-    "use-http": "^1.0.9"
+    "use-http": "^1.0.9",
+    "yup": "^0.28.4"
   },
   "scripts": {
     "start": "react-scripts start",

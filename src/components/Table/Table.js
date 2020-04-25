@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Alert, Spinner, Table as BootstrapTable } from "react-bootstrap";
+import {
+  Alert,
+  Badge,
+  Spinner,
+  Table as BootstrapTable,
+} from "react-bootstrap";
 import useFetch from "use-http";
 import { FormModal, RemoveModal } from "../Modals";
 import TableHeader from "./TableHeader";
 import TableItem from "./TableItem";
+import styles from "./Table.module.css";
 
 const columns = ["ID", "Name", "Username", "Email", "City", "Edit", "Delete"];
 
@@ -13,6 +19,10 @@ const serverAddress =
 
 const Table = (props) => {
   const [users, setUsers] = useState([]);
+  const [sortInfo, setSortInfo] = useState({
+    sorted: false,
+    icon: "⇅",
+  });
   const { del, error, get, loading, post, put, response } = useFetch(
     serverAddress
   );
@@ -94,6 +104,24 @@ const Table = (props) => {
     setModalData(newData);
   };
 
+  const sortingMethod = (arr, field, order) => {
+    return arr.sort((a, b) =>
+      order === "↓"
+        ? a[field].localeCompare(b[field])
+        : b[field].localeCompare(a[field])
+    );
+  };
+
+  const sortHandler = () => {
+    setSortInfo((sortInfo) => ({
+      sorted: true,
+      icon: sortInfo.icon === "↓" ? "↑" : "↓",
+    }));
+    setUsers((users) =>
+      sortingMethod(users, "username", sortInfo.icon === "↓" ? "↑" : "↓")
+    );
+  };
+
   return (
     <>
       {error && <Alert variant="danger">{error}</Alert>}
@@ -106,7 +134,18 @@ const Table = (props) => {
           <thead>
             <tr>
               {columns.map((item) => (
-                <th key={item}>{item}</th>
+                <th key={item}>
+                  <span>{item}</span>
+                  {item.toLowerCase() === "username" && (
+                    <Badge
+                      className={styles.sortIcon}
+                      variant="secondary"
+                      onClick={sortHandler}
+                    >
+                      {sortInfo.icon}
+                    </Badge>
+                  )}
+                </th>
               ))}
             </tr>
           </thead>
