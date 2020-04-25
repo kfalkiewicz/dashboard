@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Alert, Table as BootstrapTable } from "react-bootstrap";
+import { Alert, Spinner, Table as BootstrapTable } from "react-bootstrap";
 import useFetch from "use-http";
 import { FormModal, RemoveModal } from "../Modals";
 import TableHeader from "./TableHeader";
@@ -13,7 +13,9 @@ const serverAddress =
 
 const Table = (props) => {
   const [users, setUsers] = useState([]);
-  const { del, error, get, post, put, response } = useFetch(serverAddress);
+  const { del, error, get, loading, post, put, response } = useFetch(
+    serverAddress
+  );
   const [modalData, setModalData] = useState({
     action: "Add",
     item: {},
@@ -25,6 +27,17 @@ const Table = (props) => {
     form: FormModal,
     remove: RemoveModal,
   }[modalData.type];
+
+  let indicator;
+  if (!users.length && loading) {
+    indicator = (
+      <Spinner animation="border" role="status">
+        <span className="sr-only">Loading...</span>
+      </Spinner>
+    );
+  } else if (!users.length && !loading) {
+    indicator = <p>No Data!!!</p>;
+  }
 
   useEffect(() => {
     getUsers();
@@ -77,6 +90,7 @@ const Table = (props) => {
       show: true,
       type,
     };
+
     setModalData(newData);
   };
 
@@ -86,29 +100,32 @@ const Table = (props) => {
       <TableHeader
         clickHandler={() => tableItemHandler("Add", addUser, {}, "form")}
       />
-      <BootstrapTable striped bordered hover>
-        <thead>
-          <tr>
-            {columns.map((item) => (
-              <th key={item}>{item}</th>
+      {indicator}
+      {users.length > 0 && (
+        <BootstrapTable striped bordered hover>
+          <thead>
+            <tr>
+              {columns.map((item) => (
+                <th key={item}>{item}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((item) => (
+              <TableItem
+                key={`${item.id}_${item.username}`}
+                item={item}
+                editHandler={(item) =>
+                  tableItemHandler("Edit", editUser, item, "form")
+                }
+                removeHandler={(item) =>
+                  tableItemHandler("Remove", removeUser, item, "remove")
+                }
+              />
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((item) => (
-            <TableItem
-              key={`${item.id}_${item.username}`}
-              item={item}
-              editHandler={(item) =>
-                tableItemHandler("Edit", editUser, item, "form")
-              }
-              removeHandler={(item) =>
-                tableItemHandler("Remove", removeUser, item, "remove")
-              }
-            />
-          ))}
-        </tbody>
-      </BootstrapTable>
+          </tbody>
+        </BootstrapTable>
+      )}
       <Modal
         clickHandler={modalData.handler}
         item={modalData.item}
